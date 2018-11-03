@@ -2,3 +2,5 @@ vendor
 test.mp3
 test.txt
 .idea
+token.json
+credentials.json
