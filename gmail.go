@@ -4,15 +4,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"regexp"
 )
 
 // Retrieve a token, saves the token, then returns the generated client.
@@ -67,12 +67,13 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("You must supply a label id")
-		os.Exit(1)
-	}
+/*func main(){
 	labelId := os.Args[1]
+	emails := retrieveEmail(labelId)
+	fmt.Print(emails)
+}*/
+func retrieveEmail(labelId string) []string {
+	result := []string{}
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
@@ -97,7 +98,7 @@ func main() {
 	}
 	if len(r.Messages) == 0 {
 		fmt.Println("No message found.")
-		return
+		return result
 	}
 	for _, m := range r.Messages {
 		mess, err := srv.Users.Messages.Get(user, m.Id).Format("full").Do()
@@ -109,10 +110,16 @@ func main() {
 				decoded, err := base64.URLEncoding.DecodeString(p.Body.Data)
 				if err != nil {
 					fmt.Println("decode error:", err)
-					return
 				}
-				fmt.Println(string(decoded))
+				decodedEmail := string(decoded)
+				//remove URLs
+				rp := regexp.MustCompile("<(.*)>")
+				decodedEmail = rp.ReplaceAllString(decodedEmail, "")
+
+				result = append(result, decodedEmail)
+
 			}
 		}
 	}
+	return result
 }
